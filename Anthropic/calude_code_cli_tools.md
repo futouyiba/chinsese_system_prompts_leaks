@@ -1,80 +1,79 @@
-# Claude Code Internal Tools - Technical Reference
+# Claude Code 内部工具 - 技术参考
 
-> **Complete technical documentation of Claude Code's internal tools**
+> **Claude Code 内部工具的完整技术文档**
 
-This document provides comprehensive technical details about Claude Code's internal tools, including parameter schemas, implementation behaviors, and usage patterns.
-
+本文档提供了有关 Claude Code 内部工具的全面技术细节，包括参数架构、实现行为和使用模式。
 
 ### Claude Sonnet 4.5
 
-**Technical Details:**
-- **Model ID:** `claude-sonnet-4-5-20250929`
-- **Model Name:** Sonnet 4.5
-- **Release Date:** September 29, 2025
-- **Current Date:** October 17, 2025
-- **Knowledge Cutoff:** January 2025
+**技术细节：**
+- **模型 ID：** `claude-sonnet-4-5-20250929`
+- **模型名称：** Sonnet 4.5
+- **发布日期：** 2025年9月29日
+- **当前日期：** 2025年10月17日
+- **知识截止日期：** 2025年1月
 
 ---
 
-## Table of Contents
+## 目录
 
-1. [File Operations](#file-operations)
-2. [Execution Tools](#execution-tools)
-3. [Agent Management](#agent-management)
-4. [Planning & Tracking](#planning--tracking)
-5. [User Interaction](#user-interaction)
-6. [Web Operations](#web-operations)
-7. [IDE Integration](#ide-integration)
-8. [MCP Resources](#mcp-resources)
-9. [Complete Implementation Summary](#complete-implementation-summary)
+1. [文件操作](#file-operations)
+2. [执行工具](#execution-tools)
+3. [Agent 管理](#agent-management)
+4. [规划与追踪](#planning--tracking)
+5. [用户交互](#user-interaction)
+6. [Web 操作](#web-operations)
+7. [IDE 集成](#ide-integration)
+8. [MCP 资源](#mcp-resources)
+9. [完整实现总结](#complete-implementation-summary)
 
 ---
 
-## File Operations
+## 文件操作
 
-### Read Tool
+### Read 工具
 
-**Purpose:** Read file contents from the local filesystem with multimodal support and partial reads.
+**用途：** 从本地文件系统读取文件内容，支持多模态和部分读取。
 
-**Technical Implementation:**
+**技术实现：**
 
-The Read tool provides direct filesystem access with intelligent content parsing:
-- Accesses any file on the machine with appropriate permissions
-- Default read limit: 2000 lines from the beginning of the file
-- Line truncation: 2000 characters per line
-- Output format: `cat -n` style with line numbers starting at 1
-- Line number prefix format: `spaces + line_number + tab + content`
+Read 工具提供直接的文件系统访问，并具有智能内容解析功能：
+- 以适当的权限访问机器上的任何文件
+- 默认读取限制：从文件开头起 2000 行
+- 行截断：每行 2000 个字符
+- 输出格式：类似 `cat -n` 风格，行号从 1 开始
+- 行号前缀格式：`空格 + 行号 + 制表符 + 内容`
 
-**Multimodal Capabilities:**
+**多模态能力：**
 
-The tool supports multiple file formats through specialized processors:
-- **Images (PNG, JPG, etc.):** Contents presented visually as Claude Code is a multimodal LLM
-- **PDF files:** Processed page by page, extracting both text and visual content
-- **Jupyter notebooks (.ipynb):** Returns all cells with their outputs, combining code, text, and visualizations
+该工具通过专用处理器支持多种文件格式：
+- **图像（PNG、JPG 等）：** 内容以视觉方式呈现，因为 Claude Code 是一个多模态 LLM
+- **PDF 文件：** 逐页处理，提取文本和视觉内容
+- **Jupyter notebooks (.ipynb)：** 返回所有单元格及其输出，结合了代码、文本和可视化
 
-**Error Handling:**
+**错误处理：**
 
-- Empty files trigger a system reminder warning in place of content
-- Invalid paths return appropriate error messages
-- Permission denied errors are surfaced to the user
+- 空文件会触发系统提醒警告，而不是显示内容
+- 路径无效会返回相应的错误消息
+- 拒绝权限错误将呈现给用户
 
-**Constraints:**
+**约束：**
 
-- Cannot read directories (use Bash `ls` command instead)
-- Must use absolute paths
-- Screenshots and temporary files are fully supported
+- 无法读取目录（请改用 Bash `ls` 命令）
+- 必须使用绝对路径
+- 完全支持屏幕截图和临时文件
 
-**Parameter Schema:**
+**参数架构：**
 
 ```typescript
 interface ReadTool {
-  file_path: string;      // Absolute path to file (required)
-  offset?: number;        // Starting line number (optional)
-  limit?: number;         // Number of lines to read (optional)
+  file_path: string;      // 文件的绝对路径（必填）
+  offset?: number;        // 起始行号（可选）
+  limit?: number;         // 读取的行数（可选）
 }
 ```
 
-**JSON Schema Details:**
+**JSON Schema 细节：**
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -84,64 +83,64 @@ interface ReadTool {
   "properties": {
     "file_path": {
       "type": "string",
-      "description": "The absolute path to the file to read"
+      "description": "要读取的文件的绝对路径"
     },
     "offset": {
       "type": "number",
-      "description": "The line number to start reading from. Only provide if the file is too large to read at once"
+      "description": "开始读取的行号。仅在文件太大无法一次读取时提供"
     },
     "limit": {
       "type": "number",
-      "description": "The number of lines to read. Only provide if the file is too large to read at once."
+      "description": "要读取的行数。仅在文件太大无法一次读取时提供。"
     }
   }
 }
 ```
 
-**Behavior Summary:**
-- Default: First 2000 lines
-- Line numbering: 1-indexed (cat -n format)
-- Line truncation: 2000 characters
-- State: Stateless, can be called multiple times
+**行为总结：**
+- 默认：前 2000 行
+- 行号：从 1 开始（cat -n 格式）
+- 行截断：2000 个字符
+- 状态：无状态，可以多次调用
 
 ---
 
-### Write Tool
+### Write 工具
 
-**Purpose:** Create new files or completely overwrite existing files with built-in safety mechanisms.
+**用途：** 创建新文件或使用内置安全机制完全覆盖现有文件。
 
-**Technical Implementation:**
+**技术实现：**
 
-The Write tool provides atomic file write operations with enforced safety checks:
-- Overwrites existing files completely (no partial updates)
-- System-enforced read-before-write validation for existing files
-- Absolute path requirement (relative paths not supported)
-- Atomic write operation (file either fully written or unchanged)
+Write 工具提供原子文件写入操作，并强制执行安全检查：
+- 完全覆盖现有文件（不进行部分更新）
+- 对现有文件强制执行“写入前读取”验证
+- 要求使用绝对路径（不支持相对路径）
+- 原子写入操作（文件要么被完整写入，要么保持不变）
 
-**Safety Mechanisms:**
+**安全机制：**
 
-Built-in protection against accidental overwrites:
-- **Read-before-write enforcement:** System will fail the operation if an existing file hasn't been read in the current session
-- **Session tracking:** Maintains record of files read to validate write operations
-- **Best practices enforcement:** Prefers Edit tool for existing files, Write only for new files
+内置防止意外覆盖的保护措施：
+- **强制写入前读取：** 如果在当前会话中尚未读取现有文件，系统将使操作失败
+- **会话追踪：** 保留已读取文件的记录，以验证写入操作
+- **最佳实践强制执行：** 对现有文件首选 Edit 工具，Write 仅用于新文件
 
-**Design Philosophy:**
+**设计理念：**
 
-- Prefer Edit tool for modifications to existing files
-- Use Write only when creating genuinely new files
-- Avoid creating documentation files (*.md, README) unless explicitly requested
-- No emoji insertion unless explicitly requested by user
+- 对于现有文件的修改，首选 Edit 工具
+- 仅在创建真正的新文件时使用 Write
+- 除非用户明确要求，否则避免创建文档文件（*.md, README）
+- 除非用户明确要求，否则不插入表情符号
 
-**Parameter Schema:**
+**参数架构：**
 
 ```typescript
 interface WriteTool {
-  file_path: string;      // Absolute path (must be absolute, not relative) (required)
-  content: string;        // Complete file content (required)
+  file_path: string;      // 绝对路径（必须是绝对路径，不能是相对路径）（必填）
+  content: string;        // 完整的文件内容（必填）
 }
 ```
 
-**JSON Schema Details:**
+**JSON Schema 细节：**
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -151,73 +150,73 @@ interface WriteTool {
   "properties": {
     "file_path": {
       "type": "string",
-      "description": "The absolute path to the file to write (must be absolute, not relative)"
+      "description": "要写入的文件的绝对路径（必须是绝对路径，不能是相对路径）"
     },
     "content": {
       "type": "string",
-      "description": "The content to write to the file"
+      "description": "要写入文件的内容"
     }
   }
 }
 ```
 
-**Enforcement Rules:**
-- Read-before-write: Enforced by system for existing files
-- Path validation: Must be absolute path
-- Session state: Tracks read files in current conversation
+**执行规则：**
+- 写入前读取：系统对现有文件强制执行
+- 路径验证：必须是绝对路径
+- 会话状态：在当前对话中追踪已读取的文件
 
 ---
 
-### Edit Tool
+### Edit 工具
 
-**Purpose:** Perform precise, surgical string replacements in files with exact matching.
+**用途：** 使用精确匹配在文件中执行外科手术般的字符串替换。
 
-**Technical Implementation:**
+**技术实现：**
 
-The Edit tool implements exact string matching and replacement:
-- Operates on exact string matches (not regex or patterns)
-- Requires prior read operation in current session
-- Preserves file encoding and line endings
-- Atomic operation (file either fully updated or unchanged)
+Edit 工具实现精确的字符串匹配和替换：
+- 针对精确的字符串匹配进行操作（不是正则表达式或模式）
+- 需要在当前会话中预先执行读取操作
+- 保留文件编码和换行符
+- 原子操作（文件要么被完整更新，要么保持不变）
 
-**String Matching Algorithm:**
+**字符串匹配算法：**
 
-The tool uses exact string matching with the following behavior:
-- **Uniqueness requirement:** `old_string` must have exactly one match in file (unless `replace_all=true`)
-- **Whitespace sensitivity:** Preserves exact indentation (tabs/spaces) from source
-- **Line number prefix handling:** Content after line number prefix (`spaces + line_number + tab`) is the actual file content
-- **Failure mode:** Operation fails if `old_string` is not unique (prevents ambiguous edits)
+该工具使用精确的字符串匹配，其行为如下：
+- **唯一性要求：** `old_string` 在文件中必须恰好有一个匹配项（除非 `replace_all=true`）
+- **空格敏感性：** 保留源文件中的精确缩进（制表符/空格）
+- **行号前缀处理：** 行号前缀（`空格 + 行号 + 制表符`）之后的内容才是实际的文件内容
+- **失败模式：** 如果 `old_string` 不唯一，则操作失败（防止歧义编辑）
 
-**Replace Modes:**
+**替换模式：**
 
-1. **Single replacement (default):** Replaces one unique occurrence
-   - Fails if `old_string` appears multiple times or zero times
-   - Use case: Surgical edits to specific code locations
+1. **单个替换（默认）：** 替换一个唯一的匹配项
+   - 如果 `old_string` 出现多次或零次，则失败
+   - 使用场景：对特定代码位置进行精确编辑
 
-2. **Replace all (`replace_all=true`):** Replaces all occurrences
-   - Useful for variable renaming across file
-   - No uniqueness requirement
-   - Use case: Refactoring, batch replacements
+2. **全部替换 (`replace_all=true`)：** 替换所有匹配项
+   - 可用于整个文件中的变量重命名
+   - 无唯一性要求
+   - 使用场景：重构、批量替换
 
-**Safety Mechanisms:**
+**安全机制：**
 
-- **Read-before-edit enforcement:** System validates file was read at least once in conversation
-- **Content validation:** `new_string` must differ from `old_string`
-- **Indentation preservation:** Exact whitespace matching from Read tool output
-- **Session tracking:** Maintains list of read files for validation
+- **强制编辑前读取：** 系统验证在对话中至少读取过该文件一次
+- **内容验证：** `new_string` 必须与 `old_string` 不同
+- **缩进保留：** 来自 Read 工具输出的精确空格匹配
+- **会话追踪：** 保留已读取文件的列表以进行验证
 
-**Parameter Schema:**
+**参数架构：**
 
 ```typescript
 interface EditTool {
-  file_path: string;      // Absolute path (must be absolute, not relative) (required)
-  old_string: string;     // Exact text to find and replace (required)
-  new_string: string;     // Replacement text (must be different from old_string) (required)
-  replace_all?: boolean;  // Replace all occurrences (default: false)
+  file_path: string;      // 绝对路径（必须是绝对路径，不能是相对路径）（必填）
+  old_string: string;     // 要查找并替换的精确文本（必填）
+  new_string: string;     // 替换文本（必须与 old_string 不同）（必填）
+  replace_all?: boolean;  // 替换所有匹配项（默认值：false）
 }
 ```
 
-**JSON Schema Details:**
+**JSON Schema 细节：**
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -227,73 +226,73 @@ interface EditTool {
   "properties": {
     "file_path": {
       "type": "string",
-      "description": "The absolute path to the file to modify"
+      "description": "要修改的文件的绝对路径"
     },
     "old_string": {
       "type": "string",
-      "description": "The text to replace"
+      "description": "要替换的文本"
     },
     "new_string": {
       "type": "string",
-      "description": "The text to replace it with (must be different from old_string)"
+      "description": "用于替换的文本（必须与 old_string 不同）"
     },
     "replace_all": {
       "type": "boolean",
       "default": false,
-      "description": "Replace all occurences of old_string (default false)"
+      "description": "替换所有出现的 old_string（默认为 false）"
     }
   }
 }
 ```
 
-**Common Use Cases:**
-- Bug fixes in specific code sections
-- Updating function implementations
-- Variable/function renaming (with `replace_all`)
-- Configuration changes
-- Documentation updates
+**常见使用场景：**
+- 特定代码部分的错误修复
+- 更新函数实现
+- 变量/函数重命名（配合 `replace_all`）
+- 配置更改
+- 文档更新
 
 ---
 
-### Glob Tool
+### Glob 工具
 
-**Purpose:** Fast file pattern matching that works with any codebase size.
+**用途：** 适用于任何代码库大小的快速文件模式匹配。
 
-**Technical Implementation:**
+**技术实现：**
 
-High-performance file search using glob patterns:
-- Fast pattern matching optimized for any codebase size
-- Returns file paths sorted by modification time (most recent first)
-- Supports parallel execution (call multiple times in single message)
-- Integrates with Task tool for complex searches
+使用 glob 模式进行高性能文件搜索：
+- 针对任何代码库大小优化的快速模式匹配
+- 返回按修改时间排序的文件路径（最近的优先）
+- 支持并行执行（在单个消息中多次调用）
+- 与 Task 工具集成以进行复杂搜索
 
-**Pattern Syntax:**
+**模式语法：**
 
-Standard glob patterns supported:
-- `*` - Matches any characters except `/` (single directory level)
-- `**` - Matches any characters including `/` (recursive, all subdirectories)
-- `?` - Matches exactly one character
-- `{a,b}` - Matches either `a` or `b` (alternation)
-- `[abc]` - Matches any single character in brackets (character class)
-- `[a-z]` - Matches any character in range
-- `[!abc]` - Matches any character NOT in brackets (negation)
+支持标准 glob 模式：
+- `*` - 匹配除 `/` 之外的任何字符（单级目录）
+- `**` - 匹配包括 `/` 在内的任何字符（递归，所有子目录）
+- `?` - 恰好匹配一个字符
+- `{a,b}` - 匹配 `a` 或 `b`（交替）
+- `[abc]` - 匹配括号中的任何单个字符（字符类）
+- `[a-z]` - 匹配范围内的任何字符
+- `[!abc]` - 匹配任何不在括号中的字符（否定）
 
-**Common Patterns:**
-- `**/*.js` - All JavaScript files recursively
-- `src/**/*.{ts,tsx}` - All TypeScript files in src/ directory
-- `test/**/*.[jt]s` - All .js or .ts files in test/ directory
-- `*.json` - All JSON files in current directory
+**常见模式：**
+- `**/*.js` - 递归匹配所有 JavaScript 文件
+- `src/**/*.{ts,tsx}` - 匹配 src/ 目录下的所有 TypeScript 文件
+- `test/**/*.[jt]s` - 匹配 test/ 目录下的所有 .js 或 .ts 文件
+- `*.json` - 匹配当前目录下的所有 JSON 文件
 
-**Parameter Schema:**
+**参数架构：**
 
 ```typescript
 interface GlobTool {
-  pattern: string;        // Glob pattern to match files against (required)
-  path?: string;         // Directory to search in (defaults to cwd)
+  pattern: string;        // 用于匹配文件的 Glob 模式（必填）
+  path?: string;         // 要在其中搜索的目录（默认为当前工作目录）
 }
 ```
 
-**JSON Schema Details:**
+**JSON Schema 细节：**
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -303,59 +302,59 @@ interface GlobTool {
   "properties": {
     "pattern": {
       "type": "string",
-      "description": "The glob pattern to match files against"
+      "description": "要与文件匹配的 glob 模式"
     },
     "path": {
       "type": "string",
-      "description": "The directory to search in. If not specified, the current working directory will be used. IMPORTANT: Omit this field to use the default directory. DO NOT enter \"undefined\" or \"null\" - simply omit it for the default behavior. Must be a valid directory path if provided."
+      "description": "要搜索的目录。如果不指定，将使用当前工作目录。重要提示：省略此字段以使用默认目录。不要输入 \"undefined\" 或 \"null\" - 只需为默认行为省略它。如果提供，必须是有效的目录路径。"
     }
   }
 }
 ```
 
-**Important Notes:**
-- Omit `path` field to use current working directory (default behavior)
-- Never set `path` to "undefined" or "null" - simply omit the field
-- Results sorted by modification time (most recent first)
-- Works efficiently even with large codebases
+**重要说明：**
+- 省略 `path` 字段以使用当前工作目录（默认行为）
+- 永远不要将 `path` 设置为 \"undefined\" 或 \"null\" - 只需省略该字段
+- 结果按修改时间排序（最近的优先）
+- 即使在大型代码库中也能高效工作
 
 ---
 
-### Grep Tool
+### Grep 工具
 
-**Purpose:** High-performance content search using ripgrep.
+**用途：** 使用 ripgrep 进行高性能内容搜索。
 
-**Technical Implementation:**
-- "A powerful search tool **built on ripgrep**"
-- "**ALWAYS** use Grep for search tasks. **NEVER** invoke `grep` or `rg` as a Bash command. The Grep tool has been optimized for correct permissions and access"
-- "Supports **full regex syntax** (e.g., \"log.*Error\", \"function\\s+\\w+\")"
-- "**Output modes: \"content\" shows matching lines, \"files_with_matches\" shows only file paths (default), \"count\" shows match counts**"
-- "Pattern syntax: Uses **ripgrep (not grep)** - literal braces need escaping (use `interface\\{\\}` to find `interface{}` in Go code)"
-- "**Multiline matching: By default patterns match within single lines only**. For cross-line patterns like `struct \\{[\\s\\S]*?field`, use `multiline: true`"
+**技术实现：**
+- “一个构建在 **ripgrep** 之上的强大搜索工具”
+- “**始终**使用 Grep 进行搜索任务。**切勿**将 `grep` 或 `rg` 作为 Bash 命令调用。Grep 工具已针对正确的权限和访问进行了优化”
+- “支持**完整的正则语法**（例如，\"log.*Error\"，\"function\\s+\\w+\"）”
+- “**输出模式：\"content\" 显示匹配行，\"files_with_matches\" 仅显示文件路径（默认），\"count\" 显示匹配计数**”
+- “模式语法：使用 **ripgrep（不是 grep）** - 字面意义的大括号需要转义（使用 `interface\\{\\}` 在 Go 代码中查找 `interface{}`）”
+- “**多行匹配：默认情况下，模式仅在单行内匹配**。对于跨行模式（如 `struct \\{[\\s\\S]*?field`），请使用 `multiline: true`”
 
-**Tool Access:**
-- "Use Task tool for open-ended searches requiring multiple rounds"
-- "You can call multiple tools in a single response. It is always better to speculatively perform multiple searches in parallel"
+**工具访问：**
+- “对于需要多轮进行的开放式搜索，请使用 Task 工具”
+- “你可以在单次响应中调用多个工具。推测性地并行执行多个搜索总是更好的”
 
-**Parameters:**
+**参数：**
 ```typescript
 interface GrepTool {
-  pattern: string;              // Regex pattern to search for (required)
-  path?: string;                // File or directory to search in (defaults to cwd)
-  output_mode?: 'content' | 'files_with_matches' | 'count';  // Default: "files_with_matches"
-  glob?: string;                // Glob pattern to filter files (e.g., "*.js", "*.{ts,tsx}")
-  type?: string;                // File type (js, py, rust, go, java, etc.) - more efficient than include
-  '-i'?: boolean;               // Case insensitive search
-  '-n'?: boolean;               // Show line numbers (requires output_mode: "content")
-  '-A'?: number;                // Lines after match (requires output_mode: "content")
-  '-B'?: number;                // Lines before match (requires output_mode: "content")
-  '-C'?: number;                // Lines before AND after (requires output_mode: "content")
-  multiline?: boolean;          // Enable multiline mode (default: false)
-  head_limit?: number;          // Limit output to first N lines/entries
+  pattern: string;              // 要搜索的正则模式（必填）
+  path?: string;                // 要搜索的文件或目录（默认为当前工作目录）
+  output_mode?: 'content' | 'files_with_matches' | 'count';  // 默认：\"files_with_matches\"
+  glob?: string;                // 用于过滤文件的 Glob 模式（例如 \"*.js\", \"*.{ts,tsx}\"）
+  type?: string;                // 文件类型（js, py, rust, go, java 等） - 比 include 更高效
+  '-i'?: boolean;               // 区分大小写的搜索
+  '-n'?: boolean;               // 显示行号（需要 output_mode: \"content\"）
+  '-A'?: number;                // 匹配后的行数（需要 output_mode: \"content\"）
+  '-B'?: number;                // 匹配前的行数（需要 output_mode: \"content\"）
+  '-C'?: number;                // 匹配前后的行数（需要 output_mode: \"content\"）
+  multiline?: boolean;          // 启用多行模式（默认：false）
+  head_limit?: number;          // 将输出限制为前 N 行/条目
 }
 ```
 
-**JSON Schema Details:**
+**JSON Schema 细节：**
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -365,88 +364,88 @@ interface GrepTool {
   "properties": {
     "pattern": {
       "type": "string",
-      "description": "The regular expression pattern to search for in file contents"
+      "description": "要在文件内容中搜索的正则表达式模式"
     },
     "path": {
       "type": "string",
-      "description": "File or directory to search in (rg PATH). Defaults to current working directory."
+      "description": "要搜索的文件或目录 (rg PATH)。默认为当前工作目录。"
     },
     "output_mode": {
       "type": "string",
       "enum": ["content", "files_with_matches", "count"],
-      "description": "Output mode: \"content\" shows matching lines (supports -A/-B/-C context, -n line numbers, head_limit), \"files_with_matches\" shows file paths (supports head_limit), \"count\" shows match counts (supports head_limit). Defaults to \"files_with_matches\"."
+      "description": "输出模式：\"content\" 显示匹配行（支持 -A/-B/-C 上下文，-n 行号，head_limit），\"files_with_matches\" 显示文件路径（支持 head_limit），\"count\" 显示匹配计数（支持 head_limit）。默认为 \"files_with_matches\"。"
     },
     "glob": {
       "type": "string",
-      "description": "Glob pattern to filter files (e.g. \"*.js\", \"*.{ts,tsx}\") - maps to rg --glob"
+      "description": "用于过滤文件的 Glob 模式（例如 \"*.js\", \"*.{ts,tsx}\"） - 映射到 rg --glob"
     },
     "type": {
       "type": "string",
-      "description": "File type to search (rg --type). Common types: js, py, rust, go, java, etc. More efficient than include for standard file types."
+      "description": "要搜索的文件类型 (rg --type)。常用类型：js, py, rust, go, java 等。对于标准文件类型，比 include 更高效。"
     },
     "-i": {
       "type": "boolean",
-      "description": "Case insensitive search (rg -i)"
+      "description": "不区分大小写的搜索 (rg -i)"
     },
     "-n": {
       "type": "boolean",
-      "description": "Show line numbers in output (rg -n). Requires output_mode: \"content\", ignored otherwise."
+      "description": "在输出中显示行号 (rg -n)。需要 output_mode: \"content\"，否则会被忽略。"
     },
     "-A": {
       "type": "number",
-      "description": "Number of lines to show after each match (rg -A). Requires output_mode: \"content\", ignored otherwise."
+      "description": "每项匹配之后显示的行数 (rg -A)。需要 output_mode: \"content\"，否则会被忽略。"
     },
     "-B": {
       "type": "number",
-      "description": "Number of lines to show before each match (rg -B). Requires output_mode: \"content\", ignored otherwise."
+      "description": "每项匹配之前显示的行数 (rg -B)。需要 output_mode: \"content\"，否则会被忽略。"
     },
     "-C": {
       "type": "number",
-      "description": "Number of lines to show before and after each match (rg -C). Requires output_mode: \"content\", ignored otherwise."
+      "description": "每项匹配之前和之后显示的行数 (rg -C)。需要 output_mode: \"content\"，否则会被忽略。"
     },
     "multiline": {
       "type": "boolean",
-      "description": "Enable multiline mode where . matches newlines and patterns can span lines (rg -U --multiline-dotall). Default: false."
+      "description": "启用多行模式，其中 . 匹配换行符且模式可以跨行 (rg -U --multiline-dotall)。默认值：false。"
     },
     "head_limit": {
       "type": "number",
-      "description": "Limit output to first N lines/entries, equivalent to \"| head -N\". Works across all output modes: content (limits output lines), files_with_matches (limits file paths), count (limits count entries). When unspecified, shows all results from ripgrep."
+      "description": "将输出限制为前 N 行/条目，等同于 \"| head -N\"。适用于所有输出模式：content（限制输出行），files_with_matches（限制文件路径），count（限制计数条目）。未指定时，显示来自 ripgrep 的所有结果。"
     }
   }
 }
 ```
 
-**Core Implementation:**
-- Uses ripgrep binary (explicitly stated)
-- Default output_mode: "files_with_matches"
-- Context flags (-A/-B/-C) only work with output_mode: "content"
-- Multiline mode disabled by default (patterns match single lines only)
+**核心实现：**
+- 使用 ripgrep 二进制文件（已明确说明）
+- 默认 output_mode: \"files_with_matches\"
+- 上下文标志 (-A/-B/-C) 仅在 output_mode: \"content\" 时有效
+- 多行模式默认禁用（模式仅匹配单行）
 
 ---
 
-### NotebookEdit Tool
+### NotebookEdit 工具
 
-**Purpose:** Edit Jupyter notebook cells with replace, insert, delete operations.
+**用途：** 通过替换、插入、删除操作编辑 Jupyter notebook 单元格。
 
-**Technical Implementation:**
-- "Completely replaces the contents of a specific cell in a Jupyter notebook (.ipynb file)"
-- "The notebook_path parameter must be an **absolute path, not a relative path**"
-- "The cell_number is **0-indexed**"
-- "Use **edit_mode=insert** to add a new cell at the index specified by cell_number"
-- "Use **edit_mode=delete** to delete the cell at the index specified by cell_number"
+**技术实现：**
+- “完全替换 Jupyter notebook（.ipynb 文件）中特定单元格的内容”
+- “notebook_path 参数必须是**绝对路径，不能是相对路径**”
+- “cell_number 从 **0 开始索引**”
+- “使用 **edit_mode=insert** 在 cell_number 指定的索引处添加新单元格”
+- “使用 **edit_mode=delete** 删除 cell_number 指定索引处的单元格”
 
-**Parameters:**
+**参数：**
 ```typescript
 interface NotebookEditTool {
-  notebook_path: string;      // Absolute path to .ipynb file (required, must be absolute)
-  new_source: string;         // New cell content (required)
-  cell_id?: string;           // Cell ID to edit/insert after
-  cell_type?: 'code' | 'markdown';  // Cell type (required for edit_mode=insert)
-  edit_mode?: 'replace' | 'insert' | 'delete';  // Default: "replace"
+  notebook_path: string;      // .ipynb 文件的绝对路径（必填，必须是绝对路径）
+  new_source: string;         // 新单元格内容（必填）
+  cell_id?: string;           // 要编辑/在其后插入的单元格 ID
+  cell_type?: 'code' | 'markdown';  // 单元格类型（edit_mode=insert 时必填）
+  edit_mode?: 'replace' | 'insert' | 'delete';  // 默认值：\"replace\"
 }
 ```
 
-**JSON Schema Details:**
+**JSON Schema 细节：**
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -456,75 +455,75 @@ interface NotebookEditTool {
   "properties": {
     "notebook_path": {
       "type": "string",
-      "description": "The absolute path to the Jupyter notebook file to edit (must be absolute, not relative)"
+      "description": "要编辑的 Jupyter notebook 文件的绝对路径（必须是绝对路径，不能是相对路径）"
     },
     "new_source": {
       "type": "string",
-      "description": "The new source for the cell"
+      "description": "单元格的新源代码"
     },
     "cell_id": {
       "type": "string",
-      "description": "The ID of the cell to edit. When inserting a new cell, the new cell will be inserted after the cell with this ID, or at the beginning if not specified."
+      "description": "要编辑的单元格的 ID。插入新单元格时，新单元格将插入到具有此 ID 的单元格之后，如果未指定，则插入到开头。"
     },
     "cell_type": {
       "type": "string",
       "enum": ["code", "markdown"],
-      "description": "The type of the cell (code or markdown). If not specified, it defaults to the current cell type. If using edit_mode=insert, this is required."
+      "description": "单元格的类型（代码或 markdown）。如果未指定，则默认为当前单元格类型。如果使用 edit_mode=insert，则此项必填。"
     },
     "edit_mode": {
       "type": "string",
       "enum": ["replace", "insert", "delete"],
-      "description": "The type of edit to make (replace, insert, delete). Defaults to replace."
+      "description": "要进行的编辑类型（替换、插入、删除）。默认为替换。"
     }
   }
 }
 ```
 
-**Cell Indexing:**
-- 0-indexed (first cell is index 0)
-- Identifies cells by cell_id
-- When inserting, new cell added after specified cell_id
+**单元格索引：**
+- 从 0 开始索引（第一个单元格索引为 0）
+- 通过 cell_id 识别单元格
+- 插入时，在指定的 cell_id 之后添加新单元格
 
 ---
 
-## Execution Tools
+## 执行工具
 
-### Bash Tool
+### Bash 工具
 
-**Purpose:** Execute commands in a persistent shell session with state preservation.
+**用途：** 在状态保存的持久 shell 会话中执行命令。
 
-**Technical Implementation:**
-- "Executes a given bash command in a **persistent shell session** with optional timeout"
-- "The command argument is required"
-- "You can specify an optional timeout in milliseconds (up to **600000ms / 10 minutes**). If not specified, commands will timeout after **120000ms (2 minutes)**"
-- "If the output exceeds **30000 characters**, output will be truncated before being returned to you"
-- "You can use the `run_in_background` parameter to run the command in the background, which allows you to continue working while the command runs"
-- "**Never use `run_in_background` to run 'sleep' as it will return immediately**. You do not need to use '&' at the end of the command when using this parameter"
+**技术实现：**
+- “在具有可选超时时间的**持久 shell 会话**中执行给定的 bash 命令”
+- “command 参数是必需的”
+- “你可以指定以毫秒为单位的可选超时时间（最高 **600000ms / 10 分钟**）。如果未指定，命令将在 **120000ms（2 分钟）**后超时”
+- “如果输出超过 **30000 个字符**，输出将在返回给你之前被截断”
+- “你可以使用 `run_in_background` 参数在后台运行命令，这允许你在命令运行时继续工作”
+- “**切勿使用 `run_in_background` 运行 'sleep'，因为它会立即返回**。使用此参数时，你不需要在命令末尾使用 '&'”
 
-**Command Restrictions:**
-- "**Avoid** using Bash with the `find`, `grep`, `cat`, `head`, `tail`, `sed`, `awk`, or `echo` commands, unless explicitly instructed or when these commands are truly necessary for the task"
-- "**NEVER** use bash for file operations (cat/head/tail, grep, find, sed/awk, echo >/cat <<EOF)"
+**命令限制：**
+- “**避免**将 Bash 与 `find`, `grep`, `cat`, `head`, `tail`, `sed`, `awk` 或 `echo` 命令一起使用，除非明确指示或这些命令对于任务确实是必要的”
+- “**切勿**将 bash 用于文件操作（cat/head/tail, grep, find, sed/awk, echo >/cat <<EOF）”
 
-**Multiple Commands:**
-- "When issuing multiple commands: **If the commands are independent** and can run in parallel, make **multiple Bash tool calls in a single message**"
-- "**If the commands depend on each other** and must run sequentially, use a single Bash call with '&&' to chain them together"
-- "Use ';' only when you need to run commands sequentially but don't care if earlier commands fail"
-- "**DO NOT use newlines to separate commands** (newlines are ok in quoted strings)"
+**多条命令：**
+- “发布多条命令时：**如果命令相互独立**且可以并行运行，请在**单次消息中进行多次 Bash 工具调用**”
+- “**如果命令相互依赖**且必须顺序运行，请使用带有 '&&' 的单个 Bash 调用来将它们链在一起”
+- “仅当你需要顺序运行命令但不关心较早的命令是否失败时，才使用 ';'”
+- “**不要使用换行符分隔命令**（带引号的字符串中可以使用换行符）”
 
-**Working Directory:**
-- "Try to maintain your current working directory throughout the session by **using absolute paths and avoiding usage of `cd`**. You may use `cd` if the User explicitly requests it"
+**工作目录：**
+- “尝试通过**使用绝对路径并避免使用 `cd`** 在整个会话中维护当前工作目录。如果用户明确要求，你可以使用 `cd`”
 
-**Parameters:**
+**参数：**
 ```typescript
 interface BashTool {
-  command: string;              // Shell command to execute (required)
-  description?: string;         // Clear, concise description (5-10 words)
-  timeout?: number;             // Milliseconds (max 600000)
-  run_in_background?: boolean;  // Run command in background (default: false)
+  command: string;              // 要执行的 shell 命令（必填）
+  description?: string;         // 清晰、简练的描述（5-10 个单词）
+  timeout?: number;             // 毫秒（最高 600000）
+  run_in_background?: boolean;  // 在后台运行命令（默认值：false）
 }
 ```
 
-**JSON Schema Details:**
+**JSON Schema 细节：**
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -534,58 +533,58 @@ interface BashTool {
   "properties": {
     "command": {
       "type": "string",
-      "description": "The command to execute"
+      "description": "要执行的命令"
     },
     "description": {
       "type": "string",
-      "description": "Clear, concise description of what this command does in 5-10 words, in active voice. Examples:\nInput: ls\nOutput: List files in current directory\n\nInput: git status\nOutput: Show working tree status\n\nInput: npm install\nOutput: Install package dependencies\n\nInput: mkdir foo\nOutput: Create directory 'foo'"
+      "description": "用 5-10 个单词清晰、简练地描述此命令的作用，使用主动语态。示例：\n输入: ls\n输出: 列出当前目录中的文件\n\n输入: git status\n输出: 显示工作树状态\n\n输入: npm install\n输出: 安装包依赖项\n\n输入: mkdir foo\n输出: 创建目录 'foo'"
     },
     "timeout": {
       "type": "number",
-      "description": "Optional timeout in milliseconds (max 600000)"
+      "description": "以毫秒为单位的可选超时时间（最高 600000）"
     },
     "run_in_background": {
       "type": "boolean",
-      "description": "Set to true to run this command in the background. Use BashOutput to read the output later."
+      "description": "设置为 true 以在后台运行此命令。稍后使用 BashOutput 读取输出。"
     }
   }
 }
 ```
 
-**Operational Limits:**
-- Default timeout: 120000ms (2 minutes)
-- Maximum timeout: 600000ms (10 minutes)
-- Output truncated at 30000 characters
+**操作限制：**
+- 默认超时：120000ms（2 分钟）
+- 最大超时：600000ms（10 分钟）
+- 输出在 30000 个字符处截断
 
-**Git Safety:**
-- "**NEVER** update the git config"
-- "**NEVER** run destructive/irreversible git commands (like push --force, hard reset, etc) unless the user explicitly requests them"
-- "**NEVER** skip hooks (--no-verify, --no-gpg-sign, etc) unless the user explicitly requests it"
-- "**NEVER** run force push to main/master, warn the user if they request it"
+**Git 安全：**
+- “**切勿**更新 git 配置”
+- “**切勿**运行破坏性/不可逆的 git 命令（如 push --force, hard reset 等），除非用户明确要求”
+- “**切勿**跳过钩子（--no-verify, --no-gpg-sign 等），除非用户明确要求”
+- “**切勿**向 main/master 分支运行强制推送，如果用户要求，请警告用户”
 
 ---
 
-### BashOutput Tool
+### BashOutput 工具
 
-**Purpose:** Retrieve incremental output from background shells.
+**用途：** 从后台 shell 检索增量输出。
 
-**Technical Implementation:**
-- "Retrieves output from a running or completed background bash shell"
-- "Takes a shell_id parameter identifying the shell"
-- "**Always returns only new output since the last check**"
-- "Returns stdout and stderr output along with shell status"
-- "Supports optional regex filtering to show only lines matching a pattern"
-- "Any lines that do not match will **no longer be available to read**" (when using filter)
+**技术实现：**
+- “从正在运行或已完成的后台 bash shell 中检索输出”
+- “接受标识 shell 的 shell_id 参数”
+- “**始终仅返回自上次检查以来的新输出**”
+- “返回 stdout 和 stderr 输出以及 shell 状态”
+- “支持可选的正则过滤，以仅显示与模式匹配的行”
+- “任何不匹配的行将**不再可供读取**”（使用过滤器时）
 
-**Parameters:**
+**参数：**
 ```typescript
 interface BashOutputTool {
-  bash_id: string;        // ID of background shell (required)
-  filter?: string;        // Optional regex to filter output lines
+  bash_id: string;        // 后台 shell 的 ID（必填）
+  filter?: string;        // 用于过滤输出行的可选正则表达式
 }
 ```
 
-**JSON Schema Details:**
+**JSON Schema 细节：**
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -595,40 +594,40 @@ interface BashOutputTool {
   "properties": {
     "bash_id": {
       "type": "string",
-      "description": "The ID of the background shell to retrieve output from"
+      "description": "要从中检索输出的后台 shell 的 ID"
     },
     "filter": {
       "type": "string",
-      "description": "Optional regular expression to filter the output lines. Only lines matching this regex will be included in the result. Any lines that do not match will no longer be available to read."
+      "description": "用于过滤输出行的可选正则表达式。仅包含与此正则匹配的行在结果中。任何不匹配的行将不再可供读取。"
     }
   }
 }
 ```
 
-**Behavior:**
-- Returns ONLY new output since last check
-- Non-blocking (returns immediately)
-- Filter permanently removes non-matching lines
+**行为：**
+- 仅返回自上次检查以来的新输出
+- 非阻塞（立即返回）
+- 过滤器永久删除不匹配的行
 
 ---
 
-### KillShell Tool
+### KillShell 工具
 
-**Purpose:** Terminate background bash shells.
+**用途：** 终止后台 bash shell。
 
-**Technical Implementation:**
-- "Kills a running background bash shell by its ID"
-- "Takes a shell_id parameter identifying the shell to kill"
-- "Returns a success or failure status"
+**技术实现：**
+- “根据 ID 终止正在运行的后台 bash shell”
+- “接受标识要终止的 shell 的 shell_id 参数”
+- “返回成功或失败状态”
 
-**Parameters:**
+**参数：**
 ```typescript
 interface KillShellTool {
-  shell_id: string;       // ID of shell to kill (required)
+  shell_id: string;       // 要终止的 shell 的 ID（必填）
 }
 ```
 
-**JSON Schema Details:**
+**JSON Schema 细节：**
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -638,7 +637,7 @@ interface KillShellTool {
   "properties": {
     "shell_id": {
       "type": "string",
-      "description": "The ID of the background shell to kill"
+      "description": "要终止的后台 shell 的 ID"
     }
   }
 }
@@ -646,44 +645,44 @@ interface KillShellTool {
 
 ---
 
-## Agent Management
+## Agent 管理
 
-### Task Tool
+### Task 工具
 
-**Purpose:** Launch autonomous sub-agents with specialized tool access.
+**用途：** 运行具有专门工具访问权限的自主子代理。
 
-**Technical Implementation:**
-- "Launch a new agent to handle complex, multi-step tasks **autonomously**"
-- Available agent types and the tools they have access to:
-  - **general-purpose**: "General-purpose agent for researching complex questions, searching for code, and executing multi-step tasks. **When you are searching for a keyword or file and are not confident that you will find the right match in the first few tries use this agent to perform the search for you**" (Tools: **\***)
-  - **Explore**: "Fast agent specialized for exploring codebases. Use this when you need to quickly find files by patterns (eg. \"src/components/**/*.tsx\"), search code for keywords (eg. \"API endpoints\"), or answer questions about the codebase (eg. \"how do API endpoints work?\"). **When calling this agent, specify the desired thoroughness level: \"quick\" for basic searches, \"medium\" for moderate exploration, or \"very thorough\" for comprehensive analysis**" (Tools: **Glob, Grep, Read, Bash**)
-  - **statusline-setup**: "Use this agent to configure the user's Claude Code status line setting" (Tools: **Read, Edit**)
-  - **output-style-setup**: "Use this agent to create a Claude Code output style" (Tools: **Read, Write, Edit, Glob, Grep**)
+**技术实现：**
+- “运行一个新的代理来**自主**处理复杂的多步任务”
+- 可用的代理类型及其访问权限：
+  - **general-purpose**：“通用代理，用于研究复杂问题、搜索代码和执行多步任务。**当你正在搜索关键字或文件，并且不确定在前几次尝试中能否找到正确的匹配项时，请使用此代理为你执行搜索**”（工具：**\***）
+  - **Explore**：“专门用于探索代码库的快速代理。当你需要通过模式（例如 \"src/components/**/*.tsx\"）快速查找文件、在代码中搜索关键字（例如 \"API 端点\"）或回答有关代码库的问题（例如 \"API 端点如何工作？\"）时，请使用此代理。**调用此代理时，请指定所需的彻底程度：\"quick\" 用于基本搜索，\"medium\" 用于中等程度的探索，或 \"very thorough\" 用于全面分析**”（工具：**Glob, Grep, Read, Bash**）
+  - **statusline-setup**：“使用此代理配置用户的 Claude Code 状态栏设置”（工具：**Read, Edit**）
+  - **output-style-setup**：“使用此代理创建 Claude Code 输出样式”（工具：**Read, Write, Edit, Glob, Grep**）
 
-**When NOT to use:**
-- "If you want to read a specific file path, use the Read or Glob tool instead of the Agent tool, to find the match more quickly"
-- "If you are searching for a specific class definition like \"class Foo\", use the Glob tool instead, to find the match more quickly"
-- "If you are searching for code within a specific file or set of 2-3 files, use the Read tool instead of the Agent tool, to find the match more quickly"
-- "Other tasks that are not related to the agent descriptions above"
+**何时不应使用：**
+- “如果你想读取特定的文件路径，请使用 Read 或 Glob 工具而不是 Agent 工具，以便更快地找到匹配项”
+- “如果你正在搜索特定的类定义（如 \"class Foo\"），请改用 Glob 工具，以便更快地找到匹配项”
+- “如果你正在搜索特定文件或一组 2-3 个文件中的代码，请使用 Read 工具而不是 Agent 工具，以便更快地找到匹配项”
+- “其他与上述代理描述无关的任务”
 
-**Agent Behavior:**
-- "Launch multiple agents concurrently whenever possible, to maximize performance; to do that, use a **single message with multiple tool uses**"
-- "When the agent is done, it will return a **single message** back to you. The result returned by the agent is **not visible to the user**"
-- "For agents that run in the background, you will need to use AgentOutputTool to retrieve their results once they are done"
-- "**Each agent invocation is stateless**. You will not be able to send additional messages to the agent, nor will the agent be able to communicate with you outside of its final report"
-- "Your prompt should contain a **highly detailed task description** for the agent to perform autonomously and you should specify exactly what information the agent should return back to you in its final and only message to you"
-- "The agent's outputs should generally be **trusted**"
+**代理行为：**
+- “尽可能并发地运行多个代理，以最大限度地提高性能；为此，请在**单次消息中使用多个工具**”
+- “代理完成后，它将返回**一条消息**给你。代理返回的结果**对用户不可见**”
+- “对于在后台运行的代理，你需要在它们完成后使用 AgentOutputTool 检索结果”
+- “**每次代理调用都是无状态的**。你将无法向代理发送其他消息，代理也无法在最终报告之外与你通信”
+- “你的提示应包含对代理进行自主执行的**高度详细的任务描述**，并且你应该确切地指定代理应在其最终也是唯一的返回给你的消息中包含哪些信息”
+- “代理的输出通常应该是**值得信赖的**”
 
-**Parameters:**
+**参数：**
 ```typescript
 interface TaskTool {
-  prompt: string;           // Detailed task description for agent (required)
-  description: string;      // Short 3-5 word task summary (required)
-  subagent_type: string;    // Type of specialized agent (required)
+  prompt: string;           // 给代理的详细任务描述（必填）
+  description: string;      // 简短的 3-5 个单词的任务摘要（必填）
+  subagent_type: string;    // 专用代理的类型（必填）
 }
 ```
 
-**JSON Schema Details:**
+**JSON Schema 细节：**
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -693,55 +692,55 @@ interface TaskTool {
   "properties": {
     "description": {
       "type": "string",
-      "description": "A short (3-5 word) description of the task"
+      "description": "任务的简短（3-5 个单词）描述"
     },
     "prompt": {
       "type": "string",
-      "description": "The task for the agent to perform"
+      "description": "代理要执行的任务"
     },
     "subagent_type": {
       "type": "string",
-      "description": "The type of specialized agent to use for this task"
+      "description": "用于此任务的专门代理类型"
     }
   }
 }
 ```
 
-**Technical Tool Access:**
-- general-purpose: ALL tools (*)
-- Explore: Glob, Grep, Read, Bash
-- statusline-setup: Read, Edit
-- output-style-setup: Read, Write, Edit, Glob, Grep
+**技术工具访问：**
+- general-purpose：所有工具 (*)
+- Explore：Glob, Grep, Read, Bash
+- statusline-setup：Read, Edit
+- output-style-setup：Read, Write, Edit, Glob, Grep
 
-**Thoroughness Levels (Explore Agent):**
-- "quick" - basic searches
-- "medium" - moderate exploration
-- "very thorough" - comprehensive analysis
+**彻底程度等级（Explore 代理）：**
+- \"quick\" - 基本搜索
+- \"medium\" - 中等探索
+- \"very thorough\" - 全面分析
 
 ---
 
-### Skill Tool
+### Skill 工具
 
-**Purpose:** Execute user-defined skills.
+**用途：** 执行用户定义的技能。
 
-**Technical Implementation:**
-- "Execute a skill within the main conversation"
-- "When users ask you to perform tasks, check if any of the available skills below can help complete the task more effectively"
-- "Invoke skills using this tool with the **skill name only (no arguments)**"
-- "When you invoke a skill, you will see <command-message>The \"{name}\" skill is loading</command-message>"
-- "The skill's prompt will expand and provide detailed instructions on how to complete the task"
-- "**Only use skills listed in <available_skills> below**"
-- "**Do not invoke a skill that is already running**"
-- "**Do not use this tool for built-in CLI commands (like /help, /clear, etc.)**"
+**技术实现：**
+- “在主对话中执行一项技能”
+- “当用户要求你执行任务时，检查下方可用的任何技能是否可以帮助更有效地完成任务”
+- “使用此工具调用技能时，**仅提供技能名称（不带参数）**”
+- “当你调用一项技能时，你将看到 <command-message>\"{name}\" 技能正在加载</command-message>”
+- “技能的提示将展开，并提供有关如何完成任务的详细说明”
+- “**仅使用下方 <available_skills> 中列出的技能**”
+- “**不要调用已经在运行的技能**”
+- “**不要将此工具用于内置 CLI 命令（如 /help, /clear 等）**”
 
-**Parameters:**
+**参数：**
 ```typescript
 interface SkillTool {
-  command: string;        // Skill name only, no arguments (required)
+  command: string;        // 仅技能名称，不带参数（必填）
 }
 ```
 
-**JSON Schema Details:**
+**JSON Schema 细节：**
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -751,7 +750,7 @@ interface SkillTool {
   "properties": {
     "command": {
       "type": "string",
-      "description": "The skill name (no arguments). E.g., \"pdf\" or \"xlsx\""
+      "description": "技能名称（无参数）。例如 \"pdf\" 或 \"xlsx\""
     }
   }
 }
@@ -759,27 +758,27 @@ interface SkillTool {
 
 ---
 
-### SlashCommand Tool
+### SlashCommand 工具
 
-**Purpose:** Execute custom slash commands from user configuration.
+**用途：** 执行来自用户配置的自定义斜杠命令。
 
-**Technical Implementation:**
-- "Execute a slash command within the main conversation"
-- "**IMPORTANT - Intent Matching:** Before starting any task, CHECK if the user's request matches one of the slash commands listed below"
-- "When you use this tool or when a user types a slash command, you will see <command-message>{name} is running…</command-message> **followed by the expanded prompt**"
-- "For example, if .claude/commands/foo.md contains \"Print today's date\", then /foo expands to that prompt in the next message"
-- "When a user requests multiple slash commands, execute **each one sequentially** and check for <command-message>{name} is running…</command-message> to verify each has been processed"
-- "**Do not invoke a command that is already running**"
-- "**Only use this tool for custom slash commands** that appear in the Available Commands list below. Do NOT use for: Built-in CLI commands, Commands not shown in the list, Commands you think might exist but aren't listed"
+**技术实现：**
+- “在主对话中执行斜杠命令”
+- “**重要提示 - 意图匹配：** 在开始任何任务之前，检查用户的请求是否与下面列出的某个斜杠命令匹配”
+- “当你使用此工具或当用户键入斜杠命令时，你将看到 <command-message>{name} 正在运行…</command-message> **紧接着是展开的提示**”
+- “例如，如果 .claude/commands/foo.md 包含 \"打印今天的日期\"，那么 /foo 在下一条消息中就会展开为该提示”
+- “当用户请求多个斜杠命令时，请**依次执行每个命令**，并检查 <command-message>{name} 正在运行…</command-message> 以验证每个命令都已处理”
+- “**不要调用已经在运行的命令**”
+- “**仅对出现在下方可用命令列表中的自定义斜杠命令使用此工具**。不要用于：内置 CLI 命令、列表中未显示的命令、你认为可能存在但未列出的命令”
 
-**Parameters:**
+**参数：**
 ```typescript
 interface SlashCommandTool {
-  command: string;        // Slash command with arguments (e.g., "/review-pr 123") (required)
+  command: string;        // 带有参数的斜杠命令（例如 \"/review-pr 123\"）（必填）
 }
 ```
 
-**JSON Schema Details:**
+**JSON Schema 细节：**
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -789,608 +788,12 @@ interface SlashCommandTool {
   "properties": {
     "command": {
       "type": "string",
-      "description": "The slash command to execute with its arguments, e.g., \"/review-pr 123\""
+      "description": "要执行的斜杠命令及其参数，例如 \"/review-pr 123\""
     }
   }
 }
 ```
 
-**Command Expansion:**
-- Commands defined in `.claude/commands/*.md`
-- Prompt text expands in next message
-- Execute sequentially if multiple requested
-
----
-
-## Planning & Tracking
-
-### TodoWrite Tool
-
-**Purpose:** Create and manage structured task lists for current session.
-
-**Technical Implementation:**
-- "Use this tool to create and manage a **structured task list for your current coding session**"
-- "This helps you track progress, organize complex tasks, and demonstrate thoroughness to the user"
-- "It also helps the user understand the progress of the task and overall progress of their requests"
-
-**When to Use This Tool:**
-1. "**Complex multi-step tasks** - When a task requires 3 or more distinct steps or actions"
-2. "**Non-trivial and complex tasks** - Tasks that require careful planning or multiple operations"
-3. "**User explicitly requests todo list** - When the user directly asks you to use the todo list"
-4. "**User provides multiple tasks** - When users provide a list of things to be done (numbered or comma-separated)"
-5. "**After receiving new instructions** - Immediately capture user requirements as todos"
-6. "**When you start working on a task** - Mark it as in_progress BEFORE beginning work. **Ideally you should only have one todo as in_progress at a time**"
-7. "**After completing a task** - Mark it as completed and add any new follow-up tasks discovered during implementation"
-
-**When NOT to Use This Tool:**
-- "There is only a single, straightforward task"
-- "The task is trivial and tracking it provides no organizational benefit"
-- "The task can be completed in less than 3 trivial steps"
-- "The task is purely conversational or informational"
-- "NOTE that you should **not use this tool if there is only one trivial task to do**. In this case you are better off just doing the task directly"
-
-**Task Management:**
-- "Update task status in real-time as you work"
-- "Mark tasks complete **IMMEDIATELY** after finishing (**don't batch completions**)"
-- "**Exactly ONE task must be in_progress at any time (not less, not more)**"
-- "Complete current tasks before starting new ones"
-- "Remove tasks that are no longer relevant from the list entirely"
-
-**Task Completion Requirements:**
-- "**ONLY** mark a task as completed when you have **FULLY** accomplished it"
-- "If you encounter errors, blockers, or cannot finish, keep the task as in_progress"
-- "When blocked, create a new task describing what needs to be resolved"
-- "Never mark a task as completed if: Tests are failing, Implementation is partial, You encountered unresolved errors, You couldn't find necessary files or dependencies"
-
-**Task Breakdown:**
-- "Create specific, actionable items"
-- "Break complex tasks into smaller, manageable steps"
-- "Use clear, descriptive task names"
-- "Always provide both forms: content: \"Fix authentication bug\", activeForm: \"Fixing authentication bug\""
-
-**Parameters:**
-```typescript
-interface TodoWriteTool {
-  todos: TodoItem[];      // Array of todo items (required)
-}
-
-interface TodoItem {
-  content: string;          // Imperative form: what needs to be done (required, minLength: 1)
-  status: 'pending' | 'in_progress' | 'completed';  // (required)
-  activeForm: string;       // Present continuous: what's being done (required, minLength: 1)
-}
-```
-
-**JSON Schema Details:**
-```json
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "required": ["todos"],
-  "additionalProperties": false,
-  "properties": {
-    "todos": {
-      "type": "array",
-      "description": "The updated todo list",
-      "items": {
-        "type": "object",
-        "required": ["content", "status", "activeForm"],
-        "additionalProperties": false,
-        "properties": {
-          "content": {
-            "type": "string",
-            "minLength": 1,
-            "description": "Imperative form: what needs to be done"
-          },
-          "status": {
-            "type": "string",
-            "enum": ["pending", "in_progress", "completed"],
-            "description": "Task status"
-          },
-          "activeForm": {
-            "type": "string",
-            "minLength": 1,
-            "description": "Present continuous form: what's being done"
-          }
-        }
-      }
-    }
-  }
-}
-```
-
-**Critical Rule:**
-- "It is critical that you mark todos as completed **as soon as you are done** with a task. **Do not batch up multiple tasks before marking them as completed**"
-
----
-
-### ExitPlanMode Tool
-
-**Purpose:** Exit planning mode after creating implementation plan.
-
-**Technical Implementation:**
-- "Use this tool when you are in plan mode and have finished presenting your plan and are ready to code. This will prompt the user to exit plan mode"
-- "**IMPORTANT: Only use this tool when the task requires planning the implementation steps of a task that requires writing code**"
-- "**For research tasks where you're gathering information, searching files, reading files or in general trying to understand the codebase - do NOT use this tool**"
-
-**Handling Ambiguity in Plans:**
-- "Before using this tool, ensure your plan is clear and unambiguous. If there are multiple valid approaches or unclear requirements:"
-  1. "Use the AskUserQuestion tool to clarify with the user"
-  2. "Ask about specific implementation choices (e.g., architectural patterns, which library to use)"
-  3. "Clarify any assumptions that could affect the implementation"
-  4. "**Only proceed with ExitPlanMode after resolving ambiguities**"
-
-**Parameters:**
-```typescript
-interface ExitPlanModeTool {
-  plan: string;         // Implementation plan (supports markdown) (required)
-}
-```
-
-**JSON Schema Details:**
-```json
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "required": ["plan"],
-  "additionalProperties": false,
-  "properties": {
-    "plan": {
-      "type": "string",
-      "description": "The plan you came up with, that you want to run by the user for approval. Supports markdown. The plan should be pretty concise."
-    }
-  }
-}
-```
-
-**When to Use:**
-- After detailed planning for implementation tasks
-- Before starting to write code
-- NOT for research/exploration tasks
-
----
-
-## User Interaction
-
-### AskUserQuestion Tool
-
-**Purpose:** Ask user questions with structured multiple-choice options.
-
-**Technical Implementation:**
-- "Use this tool when you need to ask the user questions during execution"
-- "This allows you to: 1. Gather user preferences or requirements, 2. Clarify ambiguous instructions, 3. Get decisions on implementation choices as you work, 4. Offer choices to the user about what direction to take"
-- "**Users will always be able to select \"Other\" to provide custom text input**"
-- "Use **multiSelect: true** to allow multiple answers to be selected for a question"
-
-**Parameters:**
-```typescript
-interface AskUserQuestionTool {
-  questions: Question[];      // Questions to ask (1-4 questions) (required, minItems: 1, maxItems: 4)
-  answers?: Record<string, string>;  // User answers collected
-}
-
-interface Question {
-  question: string;           // Complete question (required)
-  header: string;            // Very short label (max 12 chars) (required)
-  multiSelect: boolean;      // Allow multiple selections (required)
-  options: Option[];         // Available choices (2-4 options) (required, minItems: 2, maxItems: 4)
-}
-
-interface Option {
-  label: string;             // Display text (1-5 words, concise) (required)
-  description: string;       // Explanation of choice (required)
-}
-```
-
-**JSON Schema Details:**
-```json
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "required": ["questions"],
-  "additionalProperties": false,
-  "properties": {
-    "questions": {
-      "type": "array",
-      "description": "Questions to ask the user (1-4 questions)",
-      "minItems": 1,
-      "maxItems": 4,
-      "items": {
-        "type": "object",
-        "required": ["question", "header", "options", "multiSelect"],
-        "additionalProperties": false,
-        "properties": {
-          "question": {
-            "type": "string",
-            "description": "The complete question to ask the user. Should be clear, specific, and end with a question mark. Example: \"Which library should we use for date formatting?\" If multiSelect is true, phrase it accordingly, e.g. \"Which features do you want to enable?\""
-          },
-          "header": {
-            "type": "string",
-            "description": "Very short label displayed as a chip/tag (max 12 chars). Examples: \"Auth method\", \"Library\", \"Approach\"."
-          },
-          "multiSelect": {
-            "type": "boolean",
-            "description": "Set to true to allow the user to select multiple options instead of just one. Use when choices are not mutually exclusive."
-          },
-          "options": {
-            "type": "array",
-            "description": "The available choices for this question. Must have 2-4 options. Each option should be a distinct, mutually exclusive choice (unless multiSelect is enabled). There should be no 'Other' option, that will be provided automatically.",
-            "minItems": 2,
-            "maxItems": 4,
-            "items": {
-              "type": "object",
-              "required": ["label", "description"],
-              "additionalProperties": false,
-              "properties": {
-                "label": {
-                  "type": "string",
-                  "description": "The display text for this option that the user will see and select. Should be concise (1-5 words) and clearly describe the choice."
-                },
-                "description": {
-                  "type": "string",
-                  "description": "Explanation of what this option means or what will happen if chosen. Useful for providing context about trade-offs or implications."
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "answers": {
-      "type": "object",
-      "description": "User answers collected by the permission component",
-      "additionalProperties": {
-        "type": "string"
-      }
-    }
-  }
-}
-```
-
-**Technical Constraints:**
-- 1-4 questions per call
-- 2-4 options per question
-- Header: max 12 characters
-- Option label: 1-5 words
-- "Other" option automatically added (don't include it)
-- multiSelect must be specified (not optional)
-
----
-
-## Web Operations
-
-### WebFetch Tool
-
-**Purpose:** Fetch and analyze web content using AI.
-
-**Technical Implementation:**
-- "Fetches content from a specified URL and processes it using an AI model"
-- "Takes a URL and a prompt as input"
-- "Fetches the URL content, **converts HTML to markdown**"
-- "Processes the content with the prompt using a **small, fast model**"
-- "Returns the model's response about the content"
-- "Includes a self-cleaning **15-minute cache** for faster responses when repeatedly accessing the same URL"
-- "**IMPORTANT: If an MCP-provided web fetch tool is available, prefer using that tool instead of this one**, as it may have fewer restrictions. All MCP-provided tools start with \"mcp__\""
-- "The URL must be a fully-formed valid URL"
-- "**HTTP URLs will be automatically upgraded to HTTPS**"
-- "Results may be summarized if the content is very large"
-- "**When a URL redirects to a different host, the tool will inform you and provide the redirect URL in a special format. You should then make a new WebFetch request with the redirect URL** to fetch the content"
-
-**Parameters:**
-```typescript
-interface WebFetchTool {
-  url: string;            // Fully-formed valid URL (required, format: uri)
-  prompt: string;         // Prompt to run on fetched content (required)
-}
-```
-
-**JSON Schema Details:**
-```json
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "required": ["url", "prompt"],
-  "additionalProperties": false,
-  "properties": {
-    "url": {
-      "type": "string",
-      "format": "uri",
-      "description": "The URL to fetch content from"
-    },
-    "prompt": {
-      "type": "string",
-      "description": "The prompt to run on the fetched content"
-    }
-  }
-}
-```
-
-**Technical Behaviors:**
-- HTTP→HTTPS automatic upgrade
-- 15-minute self-cleaning cache
-- HTML→Markdown conversion
-- Small fast model for processing
-- Redirect handling requires new request
-
----
-
-### WebSearch Tool
-
-**Purpose:** Search the web for current information.
-
-**Technical Implementation:**
-- "Allows Claude to search the web and use the results to inform responses"
-- "Provides up-to-date information for current events and recent data"
-- "Returns search result information formatted as search result blocks"
-- "Domain filtering is supported to include or block specific websites"
-- "**Web search is only available in the US**"
-- "**Account for \"Today's date\" in <env>. For example, if <env> says \"Today's date: 2025-07-01\", and the user wants the latest docs, do not use 2024 in the search query. Use 2025**"
-
-**Parameters:**
-```typescript
-interface WebSearchTool {
-  query: string;                  // Search query (min 2 chars) (required, minLength: 2)
-  allowed_domains?: string[];     // Only include results from these domains
-  blocked_domains?: string[];     // Never include results from these domains
-}
-```
-
-**JSON Schema Details:**
-```json
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "required": ["query"],
-  "additionalProperties": false,
-  "properties": {
-    "query": {
-      "type": "string",
-      "minLength": 2,
-      "description": "The search query to use"
-    },
-    "allowed_domains": {
-      "type": "array",
-      "description": "Only include search results from these domains",
-      "items": {
-        "type": "string"
-      }
-    },
-    "blocked_domains": {
-      "type": "array",
-      "description": "Never include search results from these domains",
-      "items": {
-        "type": "string"
-      }
-    }
-  }
-}
-```
-
-**Technical Limitations:**
-- Minimum query length: 2 characters
-- Only available in US
-- Must account for current date in queries
-
----
-
-## IDE Integration
-
-### getDiagnostics Tool
-
-**Purpose:** Get language diagnostics from VS Code.
-
-**Technical Implementation:**
-- "Get language diagnostics from VS Code"
-
-**Parameters:**
-```typescript
-interface GetDiagnosticsTool {
-  uri?: string;         // Optional file URI to get diagnostics for
-}
-```
-
-**JSON Schema Details:**
-```json
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "additionalProperties": false,
-  "properties": {
-    "uri": {
-      "type": "string",
-      "description": "Optional file URI to get diagnostics for. If not provided, gets diagnostics for all files."
-    }
-  }
-}
-```
-
-**Behavior:**
-- Queries VS Code language server
-- Returns errors, warnings, info messages
-- Can filter by specific file or get all diagnostics
-
----
-
-### executeCode Tool
-
-**Purpose:** Execute Python code in Jupyter kernel.
-
-**Technical Implementation:**
-- "Execute python code in the Jupyter kernel for the current notebook file"
-- "**All code will be executed in the current Jupyter kernel**"
-- "**Avoid declaring variables or modifying the state of the kernel unless the user explicitly asks for it**"
-- "**Any code executed will persist across calls to this tool, unless the kernel has been restarted**"
-
-**Parameters:**
-```typescript
-interface ExecuteCodeTool {
-  code: string;         // Python code to be executed (required)
-}
-```
-
-**JSON Schema Details:**
-```json
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "required": ["code"],
-  "additionalProperties": false,
-  "properties": {
-    "code": {
-      "type": "string",
-      "description": "The code to be executed on the kernel."
-    }
-  }
-}
-```
-
-**Technical State Persistence:**
-- Code executes in current Jupyter kernel
-- State persists across calls (variables, imports, etc.)
-- State cleared only on kernel restart
-- Avoid modifying kernel state unless requested
-
----
-
-## MCP Resources
-
-### ListMcpResourcesTool
-
-**Purpose:** List available resources from MCP servers.
-
-**Parameters:**
-```typescript
-interface ListMcpResourcesTool {
-  server?: string;      // Optional: filter by server name
-}
-```
-
-**JSON Schema Details:**
-```json
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "additionalProperties": false,
-  "properties": {
-    "server": {
-      "type": "string",
-      "description": "Optional: filter by server name"
-    }
-  }
-}
-```
-
----
-
-### ReadMcpResourceTool
-
-**Purpose:** Read specific resource from MCP server.
-
-**Parameters:**
-```typescript
-interface ReadMcpResourceTool {
-  server: string;       // MCP server name (required)
-  uri: string;          // Resource URI (required)
-}
-```
-
-**JSON Schema Details:**
-```json
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "required": ["server", "uri"],
-  "additionalProperties": false,
-  "properties": {
-    "server": {
-      "type": "string",
-      "description": "MCP server name"
-    },
-    "uri": {
-      "type": "string",
-      "description": "Resource URI"
-    }
-  }
-}
-```
-
----
-
-## Complete Implementation Summary
-
-### Technical Specifications:
-
-**Operational Limits:**
-- Read: Default 2000 lines, 2000 char line truncation
-- Bash: Default 120000ms (2 min), Max 600000ms (10 min), 30000 char output truncation
-- WebFetch: 15-minute self-cleaning cache
-- WebSearch: Minimum 2 char query, US only
-- Glob: Sorted by modification time
-- Grep: Default output_mode is "files_with_matches"
-
-**Enforcement Mechanisms:**
-- Write/Edit: MUST read file first (system enforced, will fail if not)
-- Edit: MUST read at least once in conversation
-- Edit: FAILS if old_string not unique (unless replace_all)
-- TodoWrite: Exactly ONE task in_progress at a time
-- TodoWrite: Both content and activeForm required
-- NotebookEdit: 0-indexed cells
-- BashOutput: Returns ONLY new output since last check
-
-**Agent Tool Access Matrix:**
-- general-purpose: * (ALL tools)
-- Explore: Glob, Grep, Read, Bash
-- statusline-setup: Read, Edit
-- output-style-setup: Read, Write, Edit, Glob, Grep
-
-**Technology Stack:**
-- Grep: Powered by ripgrep (explicitly stated)
-- WebFetch: Uses small fast model for processing
-- WebFetch: Converts HTML to markdown
-- executeCode: Executes in Jupyter kernel, state persists
-
-**Behavioral Characteristics:**
-- Read: Returns cat -n format (spaces + line number + tab + content)
-- Read: Multimodal (images presented visually, PDFs page by page, notebooks with all cells)
-- Read: Empty file triggers system reminder warning
-- Bash: Persistent shell session, state maintained
-- Bash: Never use run_in_background with sleep
-- Bash: Prefer absolute paths over cd
-- Task: Agents are stateless, return single final report
-- Task: Launch multiple agents in single message for parallel execution
-- TodoWrite: Mark completed IMMEDIATELY, don't batch
-- WebFetch: HTTP auto-upgraded to HTTPS
-- WebSearch: Must account for current date in env
-- BashOutput: Filter permanently removes non-matching lines
-- Explore agent: Has thoroughness levels (quick, medium, very thorough)
-
-**Command Chaining Patterns:**
-- Independent commands: Multiple Bash calls in single message (parallel)
-- Dependent commands: Single Bash call with && (sequential with error propagation)
-- Don't care about failure: Use ; (sequential without error propagation)
-- Never use newlines to separate commands
-
-**Operational Constraints:**
-- Read: Cannot read directories (use Bash ls)
-- Write: Never create docs unless requested
-- Edit: Never include line number prefix in old_string/new_string
-- Bash: Avoid find, grep, cat, head, tail, sed, awk, echo
-- Bash: Never update git config, never skip hooks, never force push to main/master
-- Skill: Do not invoke if already running
-- SlashCommand: Only use custom commands in Available Commands list
-
-### Implementation Details Not Exposed:
-
-The following details are internal to Claude Code and not exposed through the tool interface:
-- Specific npm packages or libraries used internally
-- Internal implementation code and algorithms
-- Storage mechanisms (in-memory vs file-based vs database)
-- Internal class structures and architecture patterns
-- Low-level system integration details
-
----
-
-**Document Version:** 4.0 (Technical Reference for Users)
-**Last Updated:** 2025-10-17
-**Source:** Claude Code Internal Tool Definitions + Official Documentation
-**Claude Code Version:** Sonnet 4.5 (claude-sonnet-4-5-20250929)
+**命令展开：**
+- 在 `.claude/commands/*.md` 中定义的命令
+- 提示文本在下一条消息中展开

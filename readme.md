@@ -1,12 +1,7 @@
-![CleanShot 2025-09-03 at 02 37 49](https://github.com/user-attachments/assets/22d32e2d-e0c9-4afc-9e72-44b779dac659)
+# AI 系统提示词泄露集合
 
+本仓库收集了各大主流 AI 模型的系统提示词（System Prompts）。
 
-# System Prompts Leaks
-
-Collection of system prompts/system messages/developer messages.
-
-Feel free to do Pull Requests
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=asgeirtj/system_prompts_leaks&type=Date)](https://www.star-history.com/#asgeirtj/system_prompts_leaks&Date)
+### 声明
+本项目仅供学术研究和学习参考之用。
+所有内容均通过合法渠道或公开信息整理而成。
