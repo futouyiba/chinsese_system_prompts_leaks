@@ -1,175 +1,175 @@
 ---
 name: docx
-description: Comprehensive document creation, editing, and analysis with support for tracked changes, comments, formatting preservation, and text extraction
-when_to_use: "When Claude needs to work with professional documents (.docx files) for: (1) Creating new documents, (2) Modifying or editing content, (3) Working with tracked changes, (4) Adding comments, or any other document tasks"
+description: 全面的文档创建、编辑和分析工具，支持修订记录、注释、格式保留和文本提取
+when_to_use: "当 Claude 需要处理专业的 Word 文档（.docx 文件）时使用，包括：(1) 创建新文档，(2) 修改或编辑内容，(3) 处理修订记录，(4) 添加注释，或其他任何文档相关任务"
 version: 0.0.1
 ---
 
-# DOCX creation, editing, and analysis
+# DOCX 创建、编辑与分析
 
-## Overview
+## 概览
 
-A user may ask you to create, edit, or analyze the contents of a .docx file. A .docx file is essentially a ZIP archive containing XML files and other resources that you can read or edit. You have different tools and workflows available for different tasks.
+用户可能会要求你创建、编辑或分析 .docx 文件的内容。.docx 文件本质上是一个包含 XML 文件和其他资源的 ZIP 压缩包，你可以读取或编辑其中的内容。针对不同的任务，你可以使用不同的工具和工作流。
 
-## Workflow Decision Tree
+## 工作流决策树
 
-### Reading/Analyzing Content
-Use "Text extraction" or "Raw XML access" sections below
+### 读取/分析内容
+参考下文的“文本提取”或“原始 XML 访问”部分。
 
-### Creating New Document
-Use "Creating a new Word document" workflow
+### 创建新文档
+使用“创建新 Word 文档”工作流。
 
-### Editing Existing Document
-- **Your own document + simple changes**
-  Use "Basic OOXML editing" workflow
+### 编辑现有文档
+- **你自己的文档 + 简单修改**
+  使用“基础 OOXML 编辑”工作流。
 
-- **Someone else's document**
-  Use **"Redlining workflow"** (recommended default)
+- **他人的文档**
+  使用 **“红线审查工作流 (Redlining workflow)”**（推荐的默认做法）。
 
-- **Legal, academic, business, or government docs**
-  Use **"Redlining workflow"** (required)
+- **法律、学术、商业或政府文档**
+  使用 **“红线审查工作流 (Redlining workflow)”**（强制要求）。
 
-## Reading and analyzing content
+## 读取与分析内容
 
-### Text extraction
-If you just need to read the text contents of a document, you should convert the document to markdown using pandoc. Pandoc provides excellent support for preserving document structure and can show tracked changes:
+### 文本提取
+如果你只需要读取文档的文本内容，你应该使用 pandoc 将文档转换为 markdown。Pandoc 能够很好地保留文档结构，并可以显示修订记录：
 ```bash
-# Convert document to markdown with tracked changes
+# 将文档转换为包含修订记录的 markdown
 pandoc --track-changes=all path-to-file.docx -o output.md
-# Options: --track-changes=accept/reject/all
+# 选项：--track-changes=accept/reject/all
 ```
 
-### Raw XML access
-You need raw XML access for: comments, complex formatting, document structure, embedded media, and metadata. For any of these features, you'll need to unpack a document and read its raw XML contents.
+### 原始 XML 访问
+在处理以下内容时需要访问原始 XML：注释、复杂格式、文档结构、嵌入媒体和元数据。对于这些功能，你需要解压文档并读取其原始 XML 内容。
 
-#### Unpacking a file
+#### 解压文件
 `python ooxml/scripts/unpack.py <office_file> <output_directory>`
 
-#### Key file structures
-* `word/document.xml` - Main document contents
-* `word/comments.xml` - Comments referenced in document.xml
-* `word/media/` - Embedded images and media files
-* Tracked changes use `<w:ins>` (insertions) and `<w:del>` (deletions) tags
+#### 关键文件结构
+* `word/document.xml` - 主文档内容
+* `word/comments.xml` - document.xml 中引用的注释
+* `word/media/` - 嵌入的图像和媒体文件
+* 修订记录使用 `<w:ins>`（插入）和 `<w:del>`（删除）标签
 
-## Creating a new Word document
+## 创建新 Word 文档
 
-When creating a new Word document from scratch, use **docx-js**, which allows you to create Word documents using JavaScript/TypeScript.
+从头开始创建新的 Word 文档时，请使用 **docx-js**，它允许你使用 JavaScript/TypeScript 创建 Word 文档。
 
-### Workflow
-1. **MANDATORY - READ ENTIRE FILE**: Read [`docx-js.md`](docx-js.md) (~500 lines) completely from start to finish. **NEVER set any range limits when reading this file.** Read the full file content for detailed syntax, critical formatting rules, and best practices before proceeding with document creation.
-2. Create a JavaScript/TypeScript file using Document, Paragraph, TextRun components (You can assume all dependencies are installed, but if not, refer to the dependencies section below)
-3. Export as .docx using Packer.toBuffer()
+### 工作流
+1. **强制要求 - 阅读完整文件**：从头到尾完整阅读 [`docx-js.md`](docx-js.md)（约 500 行）。**阅读此文件时绝不要设置任何范围限制。** 在开始创建文档之前，必须阅读完整文件内容以获取详细语法、关键格式规则和最佳实践。
+2. 使用 Document、Paragraph、TextRun 组件创建一个 JavaScript/TypeScript 文件（你可以假设所有依赖已安装，如果没有，请参考下文的依赖部分）。
+3. 使用 Packer.toBuffer() 导出为 .docx。
 
-## Editing an existing Word document
+## 编辑现有 Word 文档
 
-When editing an existing Word document, you need to work with the raw Office Open XML (OOXML) format. This involves unpacking the .docx file, editing the XML content, and repacking it.
+编辑现有 Word 文档时，你需要处理原始的 Office Open XML (OOXML) 格式。这涉及解压 .docx 文件、编辑 XML 内容并重新压缩。
 
-### Workflow
-1. **MANDATORY - READ ENTIRE FILE**: Read [`ooxml.md`](ooxml.md) (~500 lines) completely from start to finish. **NEVER set any range limits when reading this file.** Read the full file content for detailed syntax, critical validation rules, and patterns before proceeding.
-2. Unpack the document: `python ooxml/scripts/unpack.py <office_file> <output_directory>`
-3. Edit the XML files (primarily `word/document.xml` and `word/comments.xml`)
-4. **CRITICAL**: Validate immediately after each edit and fix any validation errors before proceeding: `python ooxml/scripts/validate.py <dir> --original <file>`
-5. Pack the final document: `python ooxml/scripts/pack.py <input_directory> <office_file>`
+### 工作流
+1. **强制要求 - 阅读完整文件**：从头到尾完整阅读 [`ooxml.md`](ooxml.md)（约 500 行）。**阅读此文件时绝不要设置任何范围限制。** 在继续操作前，请阅读完整文件内容以获取详细语法、关键验证规则和模式。
+2. 解压文档：`python ooxml/scripts/unpack.py <office_file> <output_directory>`
+3. 编辑 XML 文件（主要是 `word/document.xml` 和 `word/comments.xml`）。
+4. **关键**：每次编辑后立即进行验证，并在继续下一步前修复任何验证错误：`python ooxml/scripts/validate.py <dir> --original <file>`
+5. 压缩最终文档：`python ooxml/scripts/pack.py <input_directory> <office_file>`
 
-## Redlining workflow for document review
+## 用于文档审查的红线工作流 (Redlining workflow)
 
-This workflow allows you to plan comprehensive tracked changes using markdown before implementing them in OOXML. **CRITICAL**: For complete tracked changes, you must implement ALL changes systematically.
+此工作流允许你在 OOXML 中实施修订之前，先使用 markdown 规划全面的修订。**关键**：为了实现完整的修订跟进，你必须系统地执行所有更改。
 
-### Comprehensive tracked changes workflow
+### 全面修订工作流
 
-1. **Get markdown representation**: Convert document to markdown with tracked changes preserved:
+1. **获取 markdown 表示**：将文档转换为保留修订记录的 markdown：
 ```bash
    pandoc --track-changes=all path-to-file.docx -o current.md
 ```
 
-2. **Create comprehensive revision checklist**: Create a detailed checklist of ALL changes needed, with tasks listed in sequential order.
-   - All tasks should start as unchecked items using `[ ]` format
-   - **DO NOT use markdown line numbers** - they don't map to XML structure
-   - **DO use:**
-     - Section/heading numbers (e.g., "Section 3.2", "Article IV")
-     - Paragraph identifiers if numbered
-     - Grep patterns with unique surrounding text
-     - Document structure (e.g., "first paragraph", "signature block")
-   - Example: `[ ] Section 8: Change "30 days" to "60 days" (grep: "notice period of.*days prior")`
-   - Consider that text may be split across multiple `<w:t>` elements due to formatting
-   - Save as `revision-checklist.md`
+2. **创建全面修订清单**：创建一个包含所有所需更改的详细清单，并按顺序排列任务。
+   - 所有任务应使用 `[ ]` 格式起始，标记为未完成项。
+   - **不要使用 markdown 行号** —— 它们与 XML 结构不匹配。
+   - **务必使用：**
+     - 章节/标题编号（例如，“第 3.2 节”、“第 IV 条”）。
+     - 段落标识符（如果有编号）。
+     - 带有独特上下文的 Grep 模式。
+     - 文档结构（例如，“第一段”、“签名栏”）。
+   - 示例：`[ ] 第 8 节：将 “30 天” 改为 “60 天” (grep: "notice period of.*days prior")`
+   - 请考虑到文本由于格式原因可能会被拆分到多个 `<w:t>` 元素中。
+   - 保存为 `revision-checklist.md`。
 
-3. **Setup tracked changes infrastructure**:
-   - Unpack the document: `python ooxml/scripts/unpack.py <office_file> <output_directory>`
-   - Run setup script: `python skills/docx/scripts/setup_redlining.py <unpacked_directory>`
-   - This automatically:
-     - Creates `word/people.xml` with Claude as author (ID 0)
-     - Updates `[Content_Types].xml` to include people.xml content type
-     - Updates `word/_rels/document.xml.rels` to add people.xml relationship
-     - Adds `<w:trackRevisions/>` to `word/settings.xml`
-     - Generates and adds a random 8-character hex RSID (e.g., "6CEA06C3")
-     - Displays the generated RSID for reference
-   - **CRITICAL**: Note the RSID displayed by the script - you MUST use this same RSID for ALL tracked changes
+3. **设置修订基础架构**：
+   - 解压文档：`python ooxml/scripts/unpack.py <office_file> <output_directory>`
+   - 运行设置脚本：`python skills/docx/scripts/setup_redlining.py <unpacked_directory>`
+   - 这将自动完成以下操作：
+     - 创建 `word/people.xml`，将 Claude 设为作者 (ID 0)。
+     - 更新 `[Content_Types].xml` 以包含 people.xml 内容类型。
+     - 更新 `word/_rels/document.xml.rels` 添加 people.xml 关系。
+     - 将 `<w:trackRevisions/>` 添加到 `word/settings.xml`。
+     - 生成并添加一个随机的 8 位十六进制 RSID（例如 "6CEA06C3"）。
+     - 显示生成的 RSID 以供参考。
+   - **关键**：记下脚本显示的 RSID —— 你必须在所有修订中使用这个相同的 RSID。
 
-4. **Apply changes from checklist systematically**:
-   - **MANDATORY - READ ENTIRE FILE**: Read [`ooxml.md`](ooxml.md) (~500 lines) completely from start to finish. **NEVER set any range limits when reading this file.** Pay special attention to the section titled "Tracked Change Patterns".
-   - **CRITICAL for sub-agents**: If delegating work to sub-agents, each sub-agent MUST also read the "Tracked Change Patterns" section of `ooxml.md` before making any XML edits
-   - **Process each checklist item sequentially**: Go through revision checklist line by line
-   - **Locate text using grep**: Use grep to find the exact text location in `word/document.xml`
-   - **Read context with Read tool**: Use Read tool to view the complete XML structure around each change
-   - **Apply tracked changes**: Use Edit/MultiEdit tools for precision
-   - **Use consistent RSID**: Use the SAME RSID from step 3 for ALL tracked changes (IMPORTANT: RSID attributes go on `w:r` tags and are invalid on `w:del` or `w:ins` tags)
-   - **Track changes format**: All insertions use `<w:ins w:id="X" w:author="Claude" w:date="...">`, deletions use `<w:del w:id="X" w:author="Claude" w:date="...">`
+4. **系统地应用清单中的更改**：
+   - **强制要求 - 阅读完整文件**：从头到尾完整阅读 [`ooxml.md`](ooxml.md)（约 500 行）。**阅读此文件时绝不要设置任何范围限制。** 特别注意名为“Tracked Change Patterns”的章节。
+   - **智能体关键提示**：如果将工作委托给子智能体，每个子智能体在进行任何 XML 编辑之前，也必须阅读 `ooxml.md` 的“Tracked Change Patterns”部分。
+   - **按顺序处理清单每一项**：逐行检查修订清单。
+   - **使用 grep 定位文本**：使用 grep 在 `word/document.xml` 中找到确切的文本位置。
+   - **使用 Read 工具读取上下文**：使用 Read 工具查看每次更改周围完整的 XML 结构。
+   - **应用修订**：使用 Edit/MultiEdit 工具进行精确修改。
+   - **使用一致的 RSID**：在所有修订中使用第 3 步中获得的同一个 RSID（重要：RSID 属性应放在 `w:r` 标签上，放在 `w:del` 或 `w:ins` 标签上是无效的）。
+   - **修订格式**：所有插入使用 `<w:ins w:id="X" w:author="Claude" w:date="...">`，删除使用 `<w:del w:id="X" w:author="Claude" w:date="...">`。
 
-5. **MANDATORY - Review and complete checklist**:
-   - **Verify all changes**: Convert document to markdown and use grep/search to verify each change:
+5. **强制要求 - 审查并完成清单**：
+   - **验证所有更改**：将文档转换为 markdown，并使用 grep/search 验证每项更改：
 ```bash
      pandoc --track-changes=all <packed_file.docx> -o verification.md
-     grep -E "pattern" verification.md  # Check for each updated term
+     grep -E "pattern" verification.md  # 检查每个更新后的术语
 ```
-   - **Update checklist systematically**: Mark items [x] only after verification confirms the change
-   - **CRITICAL - Complete any incomplete tasks**: If items remain unchecked, you MUST complete them before proceeding
-   - **Document incomplete items**: Note any items not addressed and specific reasons why
-   - **Ensure 100% completion**: All checklist items must be [x] before proceeding
+   - **系统地更新清单**：仅在验证确认更改后，才将项目标记为 [x]。
+   - **关键 - 完成任何未完成的任务**：如果有项目未勾选，你必须在继续之前完成它们。
+   - **记录未完成项**：记下任何未处理的项目及其具体原因。
+   - **确保 100% 完成**：在继续之前，清单中的所有项目必须都标记为 [x]。
 
-6. **Final validation and packaging**:
-   - Final validation: `python ooxml/scripts/validate.py <directory> --original <file>`
-   - Pack only after validation passes: `python ooxml/scripts/pack.py <input_directory> <office_file>`
-   - Only consider task complete when validation passes AND checklist is 100% complete
+6. **最终验证与包装**：
+   - 最终验证：`python ooxml/scripts/validate.py <directory> --original <file>`
+   - 仅在验证通过后进行压缩：`python ooxml/scripts/pack.py <input_directory> <office_file>`
+   - 只有在验证通过且清单 100% 完成时，才认为任务完成。
 
-## Converting Documents to Images
+## 将文档转换为图像
 
-To visually analyze Word documents, convert them to images using a two-step process:
+为了直观地分析 Word 文档，请通过以下两个步骤将其转换为图像：
 
-1. **Convert DOCX to PDF**:
+1. **将 DOCX 转换为 PDF**：
 ```bash
    soffice --headless --convert-to pdf document.docx
 ```
 
-2. **Convert PDF pages to JPEG images**:
+2. **将 PDF 页面转换为 JPEG 图像**：
 ```bash
    pdftoppm -jpeg -r 150 document.pdf page
 ```
-   This creates files like `page-1.jpg`, `page-2.jpg`, etc.
+这将创建类似 `page-1.jpg`, `page-2.jpg` 等文件。
 
-Options:
-- `-r 150`: Sets resolution to 150 DPI (adjust for quality/size balance)
-- `-jpeg`: Output JPEG format (use `-png` for PNG if preferred)
-- `-f N`: First page to convert (e.g., `-f 2` starts from page 2)
-- `-l N`: Last page to convert (e.g., `-l 5` stops at page 5)
-- `page`: Prefix for output files
+选项：
+- `-r 150`：设置分辨率为 150 DPI（在质量和文件大小之间平衡）。
+- `-jpeg`：输出 JPEG 格式（如果需要，使用 `-png` 输出 PNG）。
+- `-f N`：开始转换的第一页（例如，`-f 2` 从第 2 页开始）。
+- `-l N`：停止转换的最后一页（例如，`-l 5` 停止在第 5 页）。
+- `page`：输出文件的文件名前缀。
 
-Example for specific range:
+转换特定范围的示例：
 ```bash
-pdftoppm -jpeg -r 150 -f 2 -l 5 document.pdf page  # Converts only pages 2-5
+pdftoppm -jpeg -r 150 -f 2 -l 5 document.pdf page  # 权转换第 2-5 页
 ```
 
-## Code Style Guidelines
-**IMPORTANT**: When generating code for DOCX operations:
-- Write concise code
-- Avoid verbose variable names and redundant operations
-- Avoid unnecessary print statements
+## 代码风格指南
+**重要**：在生成用于 DOCX 操作的代码时：
+- 编写简洁的代码
+- 避免冗长的变量名和冗余操作
+- 避免不必要的打印语句
 
-## Dependencies
+## 依赖项
 
-Required dependencies (install if not available):
+所需的依赖项（如果不可用，请安装）：
 
-- **pandoc**: `sudo apt-get install pandoc` (for text extraction)
-- **docx**: `npm install -g docx` (for creating new documents)
-- **LibreOffice**: `sudo apt-get install libreoffice` (for PDF conversion)
-- **Poppler**: `sudo apt-get install poppler-utils` (for pdftoppm to convert PDF to images)
+- **pandoc**：`sudo apt-get install pandoc`（用于文本提取）
+- **docx**：`npm install -g docx`（用于创建新文档）
+- **LibreOffice**：`sudo apt-get install libreoffice`（用于 PDF 转换）
+- **Poppler**：`sudo apt-get install poppler-utils`（用于使用 pdftoppm 将 PDF 转换为图像）

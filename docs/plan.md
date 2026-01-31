@@ -10,13 +10,33 @@
 
 ## 目录进度
 
-### 1. Anthropic (15/27)
+### 1. Anthropic (4/27)
+- [x] `claude.txt` (已完成合并与补完)
+- [x] `claude-code.md` (已完成)
 - [x] `claude-3.7-sonnet-full-system-message-humanreadable.md`
 - [x] `claude-3.7-sonnet-w-tools.md`
-- [x] `claude.txt` (已完成合并与补完)
-- [/] `claude-4.5-sonnet.md` (正在分段翻译)
-- [x] `claude-code.md` (已完成)
-- ... (其他文件待处理)
+- [x] `claude-4.5-sonnet.md` (已完成)
+- [x] `claude-sonnet-4.md` (已完成)
+- [ ] `claude-opus-4.5` (进行中)
+- [ ] `claude_works.md`
+- [ ] `claude-in-chrome.md`
+- [ ] `calude_code_cli_tools.md`
+- [ ] `docx.md`
+- [ ] `xlsx.md`
+- [ ] `pptx.md`
+- [ ] `pdf.md`
+- [ ] `readme.md`
+- [ ] `claude-ai-memory-system.md`
+- [ ] `claude-code-2025-11-1.md`
+- [ ] `claude-code-plan-mode.md`
+- [ ] `claude.ai-injections.md`
+- [ ] `end-conversation-tool.md`
+- [ ] `past_chats_tools.md`
+- [ ] `search_instructions`
+- [ ] `claude-4.1-opus-thinking.md`
+- [ ] `claude-4.5-sonnet-learning-style`
+- [ ] `claude-3.7-sonnet-w-tools.xml`
+- ... (其他文件)
 
 ### 2. OpenAI (0/42)
 - [ ] `4o-2025-09-03-new-personality.md`
