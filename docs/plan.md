@@ -10,21 +10,21 @@
 
 ## 目录进度
 
-### 1. Anthropic (4/27)
+### 1. Anthropic (14/27)
 - [x] `claude.txt` (已完成合并与补完)
 - [x] `claude-code.md` (已完成)
 - [x] `claude-3.7-sonnet-full-system-message-humanreadable.md`
 - [x] `claude-3.7-sonnet-w-tools.md`
 - [x] `claude-4.5-sonnet.md` (已完成)
 - [x] `claude-sonnet-4.md` (已完成)
-- [ ] `claude-opus-4.5` (进行中)
-- [ ] `claude_works.md`
-- [ ] `claude-in-chrome.md`
-- [ ] `calude_code_cli_tools.md`
-- [ ] `docx.md`
-- [ ] `xlsx.md`
-- [ ] `pptx.md`
-- [ ] `pdf.md`
+- [x] `claude-opus-4.5` (已完成)
+- [x] `claude_works.md` (已完成)
+- [x] `claude-in-chrome.md` (已完成)
+- [x] `calude_code_cli_tools.md` (已完成)
+- [x] `docx.md` (已完成)
+- [x] `xlsx.md` (已完成)
+- [x] `pptx.md` (已完成)
+- [x] `pdf.md` (已完成)
 - [ ] `readme.md`
 - [ ] `claude-ai-memory-system.md`
 - [ ] `claude-code-2025-11-1.md`
