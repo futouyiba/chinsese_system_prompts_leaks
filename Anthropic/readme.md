@@ -1,3 +1,22 @@
+﻿# Claude.ai System Message FAQ（中文摘要）
+
+本文是 Claude.ai 系统消息的结构化导读，主要说明：
+- JSON 转义字符含义（如 `\n`、`\t`、Unicode 转义）。
+- 系统消息包含的主要模块（引用规范、Artifacts、搜索策略、用户偏好、风格策略、工具列表、人格行为准则）。
+- 各模块在实际回答中的作用与边界。
+
+目录大致覆盖：
+1. 引用规则
+2. Artifacts 类型与使用方式
+3. 文件读取与大文件处理
+4. CSV 操作规范
+5. 搜索行为分层与版权/安全要求
+6. 用户偏好与风格应用
+7. 可用工具说明
+8. Claude 角色设定与通用行为规范
+
+---
+以下保留英文原文：
 # Claude.ai System Message FAQ
 
 CHARACTER ENCODING DETAILS:
@@ -155,3 +174,4 @@ be encoded as escape sequences.
     *   Election Information (US Presidential Election 2024)
     *   Instruction Regarding `<antml:voice_note>`
     *   Maximum Thinking Length
+

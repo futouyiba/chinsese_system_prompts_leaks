@@ -1,3 +1,20 @@
+﻿# 高级记忆注入（中文翻译）
+
+当设置里开启“参考聊天历史”（新记忆功能）后，会在系统消息中注入额外段落。
+
+更多背景与提取方法：
+`https://embracethered.com/blog/posts/2025/chatgpt-how-does-chat-history-memory-preferences-work/`
+
+这份文档用于展示注入内容的结构；作者已移除个人信息并以 `{{REDACTED}}` 替代。
+注入内容主要包括：
+- 内部迁移工具与实验工具说明；
+- 助手回复偏好（基于历史对话推断）；
+- 重要历史话题摘要；
+- 用户洞察；
+- 自动生成的交互元数据；
+- 最近会话片段。
+
+以下保留英文原文：
 When reference chat history is ON in the preferences (This is the "new" memory feature)
 
 More info on how to extract and how it works:
@@ -218,3 +235,4 @@ Users recent ChatGPT conversations, including timestamps, titles, and messages. 
 This are snippets from the last 50 conversations I just redacted it all just see the link up top to see what it looks like
 
 {{REDACTED}}
+

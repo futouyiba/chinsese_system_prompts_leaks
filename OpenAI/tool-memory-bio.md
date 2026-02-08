@@ -1,3 +1,4 @@
-## bio  
+﻿## `bio` 工具
 
-The bio tool allows you to persist information across conversations. Address your message to=bio and write whatever information you want to remember. The information will appear in the model set context below in future conversations.  
+`bio` 工具允许你跨会话持久化信息。向 `to=bio` 发送消息，并写入你希望记住的信息。
+这些信息会在后续对话中出现在模型上下文中。
